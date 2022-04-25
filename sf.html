@@ -1,0 +1,58 @@
+
+<html>
+<head>
+  <title>C-Batch Exam Practice - 17 Jan 2022</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.slim.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.1/dist/js/bootstrap.bundle.min.js"></script>
+  
+  <link rel="stylesheet" href="sf.css">
+  <script type = "text/javascript" src="sf.js?v=1"></script>
+</head>
+
+<body onload="loadWords()">
+<div class="container">
+	<h2 class="text-center"><strong>SF: Platform Developer - 1</strong></h2>
+
+	<label for="chapters">Choose a Bank:</label>
+	<select name="chapters" id="chapters" onchange="nextQuote()">
+	  <option value="1">Himanshu</option>
+	  <!--<option value="2">Himanshi</option>-->
+	</select>
+	&nbsp;&nbsp;
+	<label for="choice">Move in:</label>
+	<select name="choice" id="choice">
+	  <option value="order">Order</option>
+	  <option value="random">Random</option>
+	</select>
+	<label class="display-6 float-right bg-warning font-weight-bold" id="lblScore">Score: </label>
+	
+	<!--Display QUESTION here -->
+	<div class="row"><h1 class="display-6 text-danger"><label id="question">Question</label></h1></div>
+	
+	<!--Display OPTIONS here -->
+	<div id="AllOptions">
+		<!--OPTIONS -->
+	</div>
+
+	<!--ANSWER -->
+	<blockquote><p class="h2" id="answer">Answer</p></blockquote>
+	
+	<div class="row">
+		<button type="button" accesskey="a" class="btn btn-warning" style="margin: 10px 5px 0px 0px;" onclick = "showAnswer()">Show Answer</button>
+		<button type="button" accesskey="n" class="btn btn-success" style="margin: 10px 5px 0px 0px;" onclick = "nextQuote()">Next Question</button>
+	</div>
+	
+	<!--SHOW ALL and Table-->
+	<div class="row"><button type="button" accesskey="l" class="btn btn-info" style="margin: 10px 5px 0px 0px;" onclick = "showAll()">Show All</button></div>
+	
+	<!--TABLE-->
+	<div id="qsTable" class="bg-light">
+	</div>
+
+</div>
+</body>
+</html>
