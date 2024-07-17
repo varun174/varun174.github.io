@@ -1,0 +1,5 @@
+[proxmox]
+172.20.80.5 ansible_user=root
+
+[vm]
+172.20.80.11 ansible_user=admin2
