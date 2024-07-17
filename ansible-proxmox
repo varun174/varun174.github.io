@@ -1,0 +1,237 @@
+- name: Deploy Cloud-init VMs with a specific IP
+  hosts: proxmox
+  become: yes
+  vars_files:
+    - vars.yml
+    - secret.yml
+  become: yes
+  tasks:
+    - name: Clone template
+      community.general.proxmox_kvm:
+        node: pve
+        vmid: 111
+        clone: ubuntu-22.02
+        name: "{{ vm_name }}"
+        newid: "{{ newid }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        api_host: "{{ proxmox_api_host }}"
+        storage: local-zfs
+        timeout: 90
+
+    - name: Set cloud-init IP configuration
+      community.general.proxmox_kvm:
+        node: pve
+        name: "{{ vm_name }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        api_host: "{{ proxmox_api_host }}"
+        ciuser: "{{ cloud_init_user }}"
+#        cipassword: "{{ cloud_init_password }}"
+        ipconfig:
+          ipconfig0: "ip={{ ip_address }},gw={{ gateway }}"
+        update: yes
+
+    - name: Start VM
+      community.general.proxmox_kvm:
+        node: pve
+        name: "{{ vm_name }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_password: "{{ proxmox_api_password }}"
+        api_host: "{{ proxmox_api_host }}"
+        state: started
+
+    - name: Set VM memory
+      shell: qm set 778 --memory 2048
+      args:
+        executable: /bin/bash
+
+    - name: Set VM memory
+      shell: qm set 778 --cores 2
+      args:
+        executable: /bin/bash
+
+    - name: Stop
+      shell: qm stop 778
+      args:
+        executable: /bin/bash
+
+    - name: Wait for 120 seconds after starting the VM
+      pause:
+        seconds: 10
+
+    - name: Start
+      shell: qm start 778
+      args:
+        executable: /bin/bash
+
+    - name: Wait for 120 seconds after starting the VM
+      pause:
+        seconds: 30
+
+- name: Configure and install services on the newly created VM
+  hosts: vm
+  become: yes
+  vars_files:
+    - vars.yml
+    - secret.yml
+  tasks:
+    - name: Update apt cache
+      command: sudo apt-get update
+
+    - name: Install ClamAV and ClamAV daemon
+      apt:
+        name:
+          - clamav
+          - clamav-daemon
+        state: present
+
+    - name: Enable and start ClamAV daemon service
+      systemd:
+        name: clamav-daemon
+        enabled: yes
+        state: started
+
+    - name: Restart ClamAV service
+      systemd:
+        name: clamav-daemon
+        state: restarted
+
+    - name: Update apt cache
+      command: sudo apt-get update
+
+    - name: Install zabbix-agent repo
+      command: wget https://repo.zabbix.com/zabbix/6.0/ubuntu/pool/main/z/zabbix-release/zabbix-release_6.0-4+ubuntu22.04_all.deb
+
+    - name: Ensure
+      command: dpkg -i zabbix-release_6.0-4+ubuntu22.04_all.deb
+
+    - name: update
+      command: apt update
+
+    - name: install agent
+      command: sudo apt install zabbix-agent2 zabbix-agent2-plugin-*
+
+    - name: restart zabbix-agent
+      command: systemctl restart zabbix-agent2
+
+    - name: enable zabbix-agent
+      command: systemctl enable zabbix-agent2
+
+    - name: Wait for 15
+      pause:
+        seconds: 15
+
+    - name: Add Wazuh repository GPG key
+      apt_key:
+        url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
+        state: present
+
+    - name: Add Wazuh repository
+      apt_repository:
+        repo: "deb https://packages.wazuh.com/4.x/apt/ stable main"
+        state: present
+
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Wazuh agent
+      apt:
+        name: wazuh-agent
+        state: present
+
+    - name: Configure Wazuh agent
+      copy:
+        content: |
+          <ossec_config>
+            <client>
+              <server>
+                <address>{{ wazuh_manager_ip }}</address>
+                <port>1514</port>
+                <protocol>udp</protocol>
+              </server>
+            </client>
+            <localfile>
+              <log_format>syslog</log_format>
+              <location>/var/log/syslog</location>
+            </localfile>
+            <localfile>
+              <log_format>apache</log_format>
+              <location>/var/log/apache2/access.log</location>
+            </localfile>
+          </ossec_config>
+        dest: /var/ossec/etc/ossec.conf
+        owner: root
+        mode: '0640'
+      notify:
+        - restart wazuh-agent
+
+    - name: Enable Wazuh agent service to start on boot
+      systemd:
+        name: wazuh-agent
+        enabled: yes
+
+  handlers:
+    - name: restart wazuh-agent
+      systemd:
+        name: wazuh-agent
+        state: restarted
+
+- name: Create file and add cronjob
+  hosts: vm
+  become: yes
+  vars_files:
+    - vars.yml
+  tasks:
+    - name: Create txt file with paths
+      copy:
+        content: |
+          /var
+          /home
+          /tmp
+          /etc
+          /opt
+          /root
+        dest: /root/ClamScanTheseFolders.txt
+        owner: root
+        group: root
+        mode: '0644'
+
+    - name: Ensure ClamAV cron job exists
+      cron:
+        name: "ClamAV Scan"
+        minute: "{{ clamav_cron.minute }}"
+        hour: "{{ clamav_cron.hour }}"
+        job: 'clamscan -r -z -i --bell --file-list=/root/ClamScanTheseFolders.txt > /root/clamscan.txt && echo "servername : $(cat /etc/hostname)" >> /root/clamscan.txt'
+        user: root
+
+    - name: Ensure users are present
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        password: "{{ item.password }}"
+        shell: "{{ item.shell }}"
+        groups: "{{ item.groups }}"
+        state: present
+      loop: "{{ users }}"
+
+    - name: Create .ssh directory
+      file:
+        path: "/home/{{ item.name }}/.ssh"
+        state: directory
+        owner: "{{ item.name }}"
+        group: "{{ item.name }}"
+        mode: '0700'
+      loop: "{{ users }}"
+
+    - name: Add SSH key for users
+      copy:
+        content: "{{ item.key }}"
+        dest: "/home/{{ item.name }}/.ssh/authorized_keys"
+        owner: "{{ item.name }}"
+        group: "{{ item.name }}"
+        mode: '0600'
+      loop: "{{ users }}"
+
+    - name: Reboot the VM
+      reboot:
