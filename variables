@@ -1,0 +1,21 @@
+# vars.yml
+cloud_init_user: admin2
+#cloud_init_password: neewee@7593
+vm_name: open
+newid: 778
+ip_address: 172.20.80.11/24
+gateway: 172.20.80.1
+clamav_cron:
+  minute: "0"
+  hour: "11"
+users:
+      - name: varun
+        password: "{{ 'varun' | password_hash('sha512') }}"
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDwVplQmEimlbA0rF7ObT9SKmwHtec+/WIlXA+pE31zp+lhkU30SJGXqE3TR5/OpZE48BDxxpsbktjPgu7oms7LQmJ/iQkXzBhj87Rr1b6RL7Sg08YnHCxoddi0Gop+Uo/qTQALQbz/lFbBbS1hLpj48WsbKZn4V3GT9OU7PBHgJFccATryIcwIauL6Zlv7z7ABq51blI68Q/ZlWeu1AYioveU1JQShFoaGaSO43qu1bFT0erFf1wNv/zG5NsBfuRqJdV676jxsWLj6zDjS//qG7gU7oHkVTxZT4qlpLaSfUJQJPjeUvGz+s6BJQoX1+KWLGB71pAW07hL6akUHBtoL reddy@LAPT-1-100318"
+        shell: /bin/bash
+        groups: sudo
+      - name: customer-support
+        password: "{{ 'support' | password_hash('sha512') }}"
+        key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDwVplQmEimlbA0rF7ObT9SKmwHtec+/WIlXA+pE31zp+lhkU30SJGXqE3TR5/OpZE48BDxxpsbktjPgu7oms7LQmJ/iQkXzBhj87Rr1b6RL7Sg08YnHCxoddi0Gop+Uo/qTQALQbz/lFbBbS1hLpj48WsbKZn4V3GT9OU7PBHgJFccATryIcwIauL6Zlv7z7ABq51blI68Q/ZlWeu1AYioveU1JQShFoaGaSO43qu1bFT0erFf1wNv/zG5NsBfuRqJdV676jxsWLj6zDjS//qG7gU7oHkVTxZT4qlpLaSfUJQJPjeUvGz+s6BJQoX1+KWLGB71pAW07hL6akUHBtoL reddy@LAPT-1-100318"
+        shell: /bin/bash
+        groups: sudo
