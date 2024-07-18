@@ -67,7 +67,7 @@
 
     - name: Wait for 120 seconds after starting the VM
       pause:
-        seconds: 30
+        seconds: 120
 
 - name: Configure and install services on the newly created VM
   hosts: vm
