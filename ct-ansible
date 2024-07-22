@@ -1,0 +1,49 @@
+---
+- name: Create new LXC container in Proxmox
+  hosts: proxmox
+  become: yes
+  vars:
+    sudo_user: varun
+    sudo_password: mypassword
+  tasks:
+    - name: 'Create LXC Container'
+      community.general.proxmox:
+          vmid: 601 # Specifying Container ID
+          api_user: root@pam # Proxmox user
+          api_password: Neewee@7593 # Password in plaintext !!!
+          api_host: 172.20.80.5 # Proxmox hostname
+          password: 'neewee@7593' # Password in plaintext !!!
+          hostname: 'lxc' # Container hostname
+          node: 'pve' # Name of Proxmox host
+          cores: '1'
+          cpus: '1'
+          cpuunits: '1000'
+          ostemplate: 'local:vztmpl/ubuntu-22.04-standard_22.04-1_amd64.tar.zst' # Or use local:vztmpl/...
+          storage: 'local-zfs' # Or use 'local'
+          disk: '8'
+          memory: '512'
+          onboot: yes
+          nameserver: '8.8.8.8'
+          netif: '{"net0":"name=eth0,ip=172.20.80.21/24,gw=172.20.80.1,bridge=vmbr0"}'
+          state: 'present'
+
+    - name: Start VM
+      community.general.proxmox:
+        node: pve
+        hostname: 'lxc'
+        api_user: root@pam
+        api_password: Neewee@7593
+        api_host: 172.20.80.5
+        state: started
+
+    - name: Wait for the container to be ready
+      pause:
+        seconds: 30
+
+    - name: Create sudo user inside the container
+      ansible.builtin.command:
+        cmd: |
+          pct exec {{ 601 }} -- bash -c "
+          useradd -m -s /bin/bash {{ sudo_user }}
+          echo '{{ sudo_user }}:{{ sudo_password }}' | chpasswd
+          usermod -aG sudo {{ sudo_user }}"
