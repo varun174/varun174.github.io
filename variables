@@ -1,10 +1,10 @@
 # vars.yml
 cloud_init_user: admin2
-#cloud_init_password: neewee@7593
+#cloud_init_password: 
 vm_name: open
 newid: 778
-ip_address: 172.20.80.11/24
-gateway: 172.20.80.1
+ip_address: /24
+gateway: 
 clamav_cron:
   minute: "0"
   hour: "11"
